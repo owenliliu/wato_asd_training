@@ -13,17 +13,14 @@ public:
     ControlNode();
 
 private:
-    // ROS interfaces
     rclcpp::Subscription<nav_msgs::msg::Path>::SharedPtr path_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_pub_;
     rclcpp::TimerBase::SharedPtr control_timer_;
 
-    // Data storage
     nav_msgs::msg::Path::SharedPtr current_path_;
     nav_msgs::msg::Odometry::SharedPtr current_odom_;
 
-    // Parameters
     struct Params {
         double lookahead_distance = 0.5;
         double goal_tolerance = 0.1;
@@ -31,7 +28,6 @@ private:
         double max_angular_speed = 0.5;
     } params_;
 
-    // Core functions
     void controlLoop();
     std::optional<geometry_msgs::msg::PoseStamped> findLookaheadPoint() const;
     geometry_msgs::msg::Twist calculateControl(const geometry_msgs::msg::PoseStamped& target) const;

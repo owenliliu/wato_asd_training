@@ -1,11 +1,11 @@
 #include "map_memory_node.hpp"
 
 MapMemoryNode::MapMemoryNode() : Node("map_memory"), map_memory_(robot::MapMemoryCore(this->get_logger())) {
-    // Publisher (transient_local for late-joining subscribers)
+
     map_memory_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(
         "/map", rclcpp::QoS(10).transient_local());
     
-    // Subscribers
+
     cost_map_subscription_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
         "/costmap", 10,
         std::bind(&MapMemoryNode::costmapCallback, this, std::placeholders::_1));
@@ -14,7 +14,6 @@ MapMemoryNode::MapMemoryNode() : Node("map_memory"), map_memory_(robot::MapMemor
         "/odom/filtered", 10,
         std::bind(&MapMemoryNode::odomCallback, this, std::placeholders::_1));
     
-    // Timer (1Hz)
     timer_ = this->create_wall_timer(
         std::chrono::seconds(1),
         std::bind(&MapMemoryNode::timerCallback, this));
@@ -63,8 +62,6 @@ void MapMemoryNode::initializeGlobalMap(const nav_msgs::msg::OccupancyGrid& cost
 
 void MapMemoryNode::fuseCostmap(const nav_msgs::msg::OccupancyGrid& costmap)
 {
-    // Simple fusion: overwrite known cells
-    // Assumes same dimensions/origin (for now)
     for (size_t i = 0; i < costmap.data.size(); ++i) {
         if (costmap.data[i] != -1) { // Only update known cells
             global_map_.data[i] = costmap.data[i];

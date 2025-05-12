@@ -24,14 +24,12 @@ class MapMemoryNode : public rclcpp::Node {
     nav_msgs::msg::OccupancyGrid global_map_;
     bool has_global_map_ = false;
     
-    // Robot position tracking
     double last_x_ = 0.0;
     double last_y_ = 0.0;
     bool costmap_updated_ = false;
     bool should_update_map_ = false;
     const double distance_threshold_ = 1.5; // meters
     
-    // Core functionality
     void initializeGlobalMap(const nav_msgs::msg::OccupancyGrid& costmap);
     void fuseCostmap(const nav_msgs::msg::OccupancyGrid& costmap);
 };

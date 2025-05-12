@@ -16,22 +16,21 @@ public:
     PlannerNode();
 
 private:
-    // ROS subscribers
+
     rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
     rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr goal_sub_;
     rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
     
-    // ROS publisher
+
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_pub_;
     
-    // Timer
+
     rclcpp::TimerBase::SharedPtr timer_;
     
-    // State tracking
+
     enum class State { WAITING_FOR_GOAL, PLANNING, EXECUTING };
     State current_state_;
 
-    // Current data
     nav_msgs::msg::OccupancyGrid current_map_;
     geometry_msgs::msg::Pose robot_pose_;
     geometry_msgs::msg::Point current_goal_;
@@ -39,7 +38,7 @@ private:
     bool has_goal_ = false;
     bool has_pose_ = false;
 
-    // A* data structures
+
     struct Cell {
         int x;
         int y;
@@ -54,13 +53,12 @@ private:
         }
     };
 
-    // Callbacks
     void mapCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg);
     void goalCallback(const geometry_msgs::msg::PointStamped::SharedPtr msg);
     void odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg);
     void timerCallback();
     
-    // Planning functions
+
     bool planPath(nav_msgs::msg::Path& path);
     bool isGoalReached() const;
     double heuristic(const Cell& a, const Cell& b) const;
@@ -69,4 +67,4 @@ private:
     std::pair<double, double> mapToWorld(int mx, int my) const;
 };
 
-#endif  // PLANNER_NODE_HPP_
+#endif  

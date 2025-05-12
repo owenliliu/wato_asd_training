@@ -66,49 +66,46 @@ void CostmapNode::initializeCostmap() {
 }
 
 void CostmapNode::convertToGrid(double range, double angle, int& x_grid, int& y_grid) {
-    // Compute Cartesian coordinates in meters
+    
     double x_world = range * std::cos(angle);
     double y_world = range * std::sin(angle);
 
-    // Translate to costmap grid indices
+    
     x_grid = static_cast<int>((x_world - origin_x_) / resolution_);
     y_grid = static_cast<int>((y_world - origin_y_) / resolution_);
 }
 
 void CostmapNode::markObstacle(int x_grid, int y_grid) {
-    // Check bounds
     if (y_grid >= 0 && y_grid < height_cells_ &&
         x_grid >= 0 && x_grid < width_cells_) {
-        grid_[y_grid][x_grid] = 100; // Mark as occupied
+        grid_[y_grid][x_grid] = 100; 
     }
 }
 
 void CostmapNode::inflateObstacles(double inflation_radius, int max_cost) {
     int inflation_cells = static_cast<int>(std::ceil(inflation_radius / resolution_));
 
-    // New grid to store inflated values (copy current)
     std::vector<std::vector<int>> inflated_grid = grid_;
 
     for (int y = 0; y < height_cells_; ++y) {
         for (int x = 0; x < width_cells_; ++x) {
-            if (grid_[y][x] == 100) { // Found an obstacle cell
+            if (grid_[y][x] == 100) { 
                 for (int dy = -inflation_cells; dy <= inflation_cells; ++dy) {
                     for (int dx = -inflation_cells; dx <= inflation_cells; ++dx) {
                         int ny = y + dy;
                         int nx = x + dx;
 
-                        // Bounds check
+                
                         if (nx >= 0 && nx < width_cells_ && ny >= 0 && ny < height_cells_) {
-                            // Skip actual obstacle cell
+                         
                             if (dx == 0 && dy == 0) continue;
 
-                            // Compute distance in meters
                             double distance = std::sqrt(dx * dx + dy * dy) * resolution_;
                             if (distance > inflation_radius) continue;
 
-                            // Compute decayed cost
+                         
                             int cost = static_cast<int>(max_cost * (1.0 - distance / inflation_radius));
-                            // Update if higher than current
+                         
                             if (cost > inflated_grid[ny][nx] && grid_[ny][nx] != 100) {
                                 inflated_grid[ny][nx] = cost;
                             }
@@ -119,18 +116,15 @@ void CostmapNode::inflateObstacles(double inflation_radius, int max_cost) {
         }
     }
 
-    // Update the grid
     grid_ = inflated_grid;
 }
 
 void CostmapNode::publishCostmap() {
     nav_msgs::msg::OccupancyGrid occupancy_msg;
 
-    // Header
     occupancy_msg.header.stamp = rclcpp::Clock().now();
     occupancy_msg.header.frame_id = "robot/chassis/lidar";
 
-    // Info (assuming your class has width_cells_, height_cells_, resolution_, origin_x_, origin_y_)
     occupancy_msg.info.resolution = resolution_;
     occupancy_msg.info.width = width_cells_;
     occupancy_msg.info.height = height_cells_;
@@ -139,7 +133,6 @@ void CostmapNode::publishCostmap() {
     occupancy_msg.info.origin.position.z = 0.0;
     occupancy_msg.info.origin.orientation.w = 1.0;
 
-    // Flatten the 2D costmap into a 1D data array in row-major order
     occupancy_msg.data.resize(width_cells_ * height_cells_);
     for (int y = 0; y < height_cells_; ++y) {
         for (int x = 0; x < width_cells_; ++x) {
@@ -148,7 +141,7 @@ void CostmapNode::publishCostmap() {
         }
     }
 
-    // Publish
+
     cost_map_pub_->publish(occupancy_msg);
 }
 

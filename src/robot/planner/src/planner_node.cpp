@@ -4,7 +4,6 @@ PlannerNode::PlannerNode()
     : Node("planner_node"),
       current_state_(State::WAITING_FOR_GOAL)
 {
-    // Initialize subscribers
     map_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
         "/map", 10, std::bind(&PlannerNode::mapCallback, this, std::placeholders::_1));
         
@@ -14,11 +13,10 @@ PlannerNode::PlannerNode()
     odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
         "/odom/filtered", 10, std::bind(&PlannerNode::odomCallback, this, std::placeholders::_1));
     
-    // Initialize publisher
     path_pub_ = this->create_publisher<nav_msgs::msg::Path>(
         "/path", rclcpp::QoS(10).transient_local());
     
-    // Initialize timer (500ms check interval)
+
     timer_ = this->create_wall_timer(
         std::chrono::milliseconds(500),
         std::bind(&PlannerNode::timerCallback, this));
@@ -82,11 +80,11 @@ bool PlannerNode::planPath(nav_msgs::msg::Path& path) {
         return false;
     }
 
-    // Convert start and goal to map coordinates
+   
     Cell start = worldToMap(robot_pose_.position.x, robot_pose_.position.y);
     Cell goal = worldToMap(current_goal_.x, current_goal_.y);
 
-    // Validate cells
+
     if (!isValid(start) || !isValid(goal)) {
         RCLCPP_WARN(this->get_logger(), "Start or goal position is invalid!");
         return false;
@@ -104,12 +102,10 @@ bool PlannerNode::planPath(nav_msgs::msg::Path& path) {
     std::priority_queue<Node, std::vector<Node>, decltype(cmp)> open_set(cmp);
     std::unordered_map<Cell, Node, CellHash> all_nodes;
 
-    // Initialize start node
     Node start_node{start, 0, heuristic(start, goal), {-1, -1}};
     open_set.push(start_node);
     all_nodes[start] = start_node;
 
-    // Possible movements (8-connected grid)
     const std::vector<Cell> directions = {
         {-1, -1}, {-1, 0}, {-1, 1},
         {0, -1},          {0, 1},
@@ -120,9 +116,9 @@ bool PlannerNode::planPath(nav_msgs::msg::Path& path) {
         Node current = open_set.top();
         open_set.pop();
 
-        // Check if we reached the goal
+
         if (current.cell == goal) {
-            // Reconstruct path
+            
             std::vector<Cell> path_cells;
             Cell node = current.cell;
             while (node.x != -1 && node.y != -1) {
@@ -131,7 +127,7 @@ bool PlannerNode::planPath(nav_msgs::msg::Path& path) {
             }
             std::reverse(path_cells.begin(), path_cells.end());
 
-            // Convert to Path message
+            
             path.header.stamp = this->now();
             path.header.frame_id = "sim_world";
             path.poses.reserve(path_cells.size());
@@ -149,7 +145,7 @@ bool PlannerNode::planPath(nav_msgs::msg::Path& path) {
             return true;
         }
 
-        // Explore neighbors
+        
         for (const auto& dir : directions) {
             Cell neighbor{current.cell.x + dir.x, current.cell.y + dir.y};
 
@@ -157,7 +153,7 @@ bool PlannerNode::planPath(nav_msgs::msg::Path& path) {
                 continue;
             }
 
-            // Diagonal cost is sqrt(2), straight is 1
+            
             double move_cost = (dir.x != 0 && dir.y != 0) ? 1.414 : 1.0;
             double tentative_g = current.g_score + move_cost;
 
@@ -187,18 +183,17 @@ bool PlannerNode::isGoalReached() const {
 }
 
 double PlannerNode::heuristic(const Cell& a, const Cell& b) const {
-    // Euclidean distance
+
     return std::sqrt(std::pow(a.x - b.x, 2) + std::pow(a.y - b.y, 2));
 }
 
 bool PlannerNode::isValid(const Cell& cell) const {
-    // Check bounds
+
     if (cell.x < 0 || cell.x >= current_map_.info.width ||
         cell.y < 0 || cell.y >= current_map_.info.height) {
         return false;
     }
     
-    // Check if cell is occupied
     int index = cell.y * current_map_.info.width + cell.x;
     return current_map_.data[index] < 50;  // Consider <50 as free
 }

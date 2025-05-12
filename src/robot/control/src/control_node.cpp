@@ -1,19 +1,16 @@
 #include "control_node.hpp"
 
 ControlNode::ControlNode() : Node("pure_pursuit_controller") {
-    // Parameter declaration
     this->declare_parameter("lookahead_distance", params_.lookahead_distance);
     this->declare_parameter("goal_tolerance", params_.goal_tolerance);
     this->declare_parameter("max_linear_speed", params_.max_linear_speed);
     this->declare_parameter("max_angular_speed", params_.max_angular_speed);
 
-    // Parameter retrieval
     params_.lookahead_distance = this->get_parameter("lookahead_distance").as_double();
     params_.goal_tolerance = this->get_parameter("goal_tolerance").as_double();
     params_.max_linear_speed = this->get_parameter("max_linear_speed").as_double();
     params_.max_angular_speed = this->get_parameter("max_angular_speed").as_double();
 
-    // ROS setup
     path_sub_ = create_subscription<nav_msgs::msg::Path>(
         "/path", 10, [this](const nav_msgs::msg::Path::SharedPtr msg) {
             current_path_ = msg;
@@ -51,7 +48,6 @@ std::optional<geometry_msgs::msg::PoseStamped> ControlNode::findLookaheadPoint()
     size_t closest_idx = 0;
     double min_dist = std::numeric_limits<double>::max();
 
-    // Find closest point
     for (size_t i = 0; i < current_path_->poses.size(); ++i) {
         double dist = distanceBetween(robot_pos, current_path_->poses[i].pose.position);
         if (dist < min_dist) {
@@ -60,7 +56,6 @@ std::optional<geometry_msgs::msg::PoseStamped> ControlNode::findLookaheadPoint()
         }
     }
 
-    // Find first point beyond lookahead distance
     for (size_t i = closest_idx; i < current_path_->poses.size(); ++i) {
         double dist = distanceBetween(robot_pos, current_path_->poses[i].pose.position);
         if (dist >= params_.lookahead_distance) {
@@ -76,13 +71,13 @@ geometry_msgs::msg::Twist ControlNode::calculateControl(const geometry_msgs::msg
     const auto& robot_pos = current_odom_->pose.pose.position;
     double robot_yaw = quaternionToYaw(current_odom_->pose.pose.orientation);
 
-    // Transform to robot frame
+
     double dx = target.pose.position.x - robot_pos.x;
     double dy = target.pose.position.y - robot_pos.y;
     double target_x = cos(robot_yaw) * dx + sin(robot_yaw) * dy;
     double target_y = -sin(robot_yaw) * dx + cos(robot_yaw) * dy;
 
-    // Pure Pursuit control law
+
     double curvature = 2.0 * target_y / (target_x * target_x + target_y * target_y);
     
     cmd.linear.x = params_.max_linear_speed;
@@ -94,7 +89,6 @@ geometry_msgs::msg::Twist ControlNode::calculateControl(const geometry_msgs::msg
 }
 
 double ControlNode::quaternionToYaw(const geometry_msgs::msg::Quaternion& q) const {
-    // Simplified conversion (accurate for 2D navigation)
     return atan2(2.0*(q.w*q.z + q.x*q.y), 1.0 - 2.0*(q.y*q.y + q.z*q.z));
 }
 
